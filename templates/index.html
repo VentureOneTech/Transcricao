@@ -331,6 +331,12 @@
             fileInput.click();
         });
         
+        function handleUploadAreaClick(e) {
+            e.stopPropagation();
+            fileInput.click();
+        }
+        
+        uploadArea.addEventListener('click', handleUploadAreaClick);
         uploadArea.addEventListener('dragover', handleDragOver);
         uploadArea.addEventListener('dragleave', handleDragLeave);
         uploadArea.addEventListener('drop', handleDrop);
@@ -543,20 +549,27 @@
 
         
         function disableUploadInterface() {
-            // Desabilitar área de upload
+            // Desabilitar área de upload completamente
             uploadArea.style.pointerEvents = 'none';
             uploadArea.style.opacity = '0.6';
             uploadArea.style.cursor = 'not-allowed';
             
-            // Desabilitar input de arquivo
+            // Desabilitar input de arquivo e esconder completamente
             fileInput.disabled = true;
             fileInput.style.pointerEvents = 'none';
+            fileInput.style.display = 'none';
             
             // Desabilitar botão de seleção
             selectBtn.disabled = true;
             selectBtn.style.opacity = '0.6';
             selectBtn.style.cursor = 'not-allowed';
             selectBtn.textContent = 'Processando...';
+            
+            // Remover event listeners temporariamente
+            uploadArea.removeEventListener('click', handleUploadAreaClick);
+            uploadArea.removeEventListener('dragover', handleDragOver);
+            uploadArea.removeEventListener('dragleave', handleDragLeave);
+            uploadArea.removeEventListener('drop', handleDrop);
         }
         
         function enableUploadInterface() {
@@ -568,12 +581,19 @@
             // Habilitar input de arquivo
             fileInput.disabled = false;
             fileInput.style.pointerEvents = 'auto';
+            fileInput.style.display = 'block';
             
             // Habilitar botão de seleção
             selectBtn.disabled = false;
             selectBtn.style.opacity = '1';
             selectBtn.style.cursor = 'pointer';
             selectBtn.textContent = 'Selecionar Arquivo';
+            
+            // Restaurar event listeners
+            uploadArea.addEventListener('click', handleUploadAreaClick);
+            uploadArea.addEventListener('dragover', handleDragOver);
+            uploadArea.addEventListener('dragleave', handleDragLeave);
+            uploadArea.addEventListener('drop', handleDrop);
         }
         
         function showDownloadSection() {
