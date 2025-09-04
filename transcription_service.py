@@ -228,7 +228,7 @@ class TranscriptionService:
                 text_segment = utterance.get("text", "")
                 
                 
-                content += f"[{start_time} - {end_time}] {speaker}: {text_segment}\n\n"
+                content += f"[{start_time} - {end_time}] Speaker {speaker}: {text_segment}\n\n"
             
             # Salvar arquivo
             with open(output_path, "w", encoding="utf-8") as f:
@@ -298,10 +298,15 @@ class TranscriptionService:
                 except:
                     pass
             
+            # Calcular número de interlocutores
+            utterances = transcript_data.get('utterances', [])
+            speakers_count = len(set(u.get('speaker', 'A') for u in utterances)) if utterances else 0
+            
             return {
                 'success': True,
                 'transcript_file': result_file,
                 'language_code': transcript_data.get('language_code'),
+                'speakers_count': speakers_count,
                 'message': 'Transcrição concluída com sucesso!'
             }
             

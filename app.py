@@ -139,6 +139,7 @@ def process_transcription(job_id):
             job['message'] = 'Transcrição concluída!'
             job['result_file'] = result['transcript_file']
             job['language_code'] = result.get('language_code')
+            job['speakers_count'] = result.get('speakers_count')
             job['completed_at'] = datetime.now().isoformat()
         else:
             job['status'] = 'error'
@@ -164,6 +165,7 @@ def get_status(job_id):
         'filename': job['filename'],
         'result_file': job.get('result_file'),
         'language_code': job.get('language_code'),
+        'speakers_count': job.get('speakers_count'),
         'created_at': job['created_at'],
         'completed_at': job.get('completed_at')
     })

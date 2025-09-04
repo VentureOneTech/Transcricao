@@ -240,11 +240,29 @@
         }
         
         .language-info h4 {
-            color: #e65100;
+            color: #333;
             margin-bottom: 5px;
         }
         
         .language-info p {
+            color: #666;
+        }
+        
+        .speakers-info {
+            background: #e8f5e8;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-left: 4px solid #4caf50;
+            display: none;
+        }
+        
+        .speakers-info h4 {
+            color: #333;
+            margin-bottom: 5px;
+        }
+        
+        .speakers-info p {
             color: #666;
         }
     </style>
@@ -271,6 +289,11 @@
         <div class="language-info" id="languageInfo" style="display: none;">
             <h4>🌍 Idioma Detectado</h4>
             <p id="languageText"></p>
+        </div>
+        
+        <div class="speakers-info" id="speakersInfo" style="display: none;">
+            <h4>👥 Interlocutores</h4>
+            <p id="speakersText"></p>
         </div>
         
         <div class="progress-container" id="progressContainer">
@@ -314,6 +337,8 @@
         const fileName = document.getElementById('fileName');
         const languageInfo = document.getElementById('languageInfo');
         const languageText = document.getElementById('languageText');
+        const speakersInfo = document.getElementById('speakersInfo');
+        const speakersText = document.getElementById('speakersText');
         const progressContainer = document.getElementById('progressContainer');
         const progressFill = document.getElementById('progressFill');
         const progressText = document.getElementById('progressText');
@@ -414,6 +439,9 @@
         }
         
         function startTranscription(jobId) {
+            // Desabilitar interface durante processamento
+            disableUploadInterface();
+            
             fetch(`/transcribe/${jobId}`, {
                 method: 'POST'
             })
@@ -433,6 +461,7 @@
                 showStatus('Erro ao iniciar transcrição: ' + error.message, 'error');
                 hideProgress();
                 resetUploadButton();
+                enableUploadInterface();
             });
         }
         
@@ -469,16 +498,23 @@
                     showLanguageInfo(data.language_code);
                 }
                 
+                // Mostrar número de interlocutores se disponível
+                if (data.speakers_count) {
+                    showSpeakersInfo(data.speakers_count);
+                }
+                
                 if (data.status === 'completed') {
                     clearInterval(statusCheckInterval);
                     showStatus('Transcrição concluída com sucesso!', 'success');
                     showDownloadSection();
                     resetUploadButton();
+                    enableUploadInterface();
                 } else if (data.status === 'error') {
                     clearInterval(statusCheckInterval);
                     showStatus('Erro na transcrição: ' + data.message, 'error');
                     hideProgress();
                     resetUploadButton();
+                    enableUploadInterface();
                 }
             })
             .catch(error => {
@@ -517,6 +553,39 @@
             const languageName = languageNames[languageCode] || languageCode;
             languageText.textContent = `Idioma detectado: ${languageName} (${languageCode})`;
             languageInfo.style.display = 'block';
+        }
+        
+        function showSpeakersInfo(speakersCount) {
+            speakersText.textContent = `Número de interlocutores detectados: ${speakersCount}`;
+            speakersInfo.style.display = 'block';
+        }
+        
+        function disableUploadInterface() {
+            // Desabilitar área de upload
+            uploadArea.style.pointerEvents = 'none';
+            uploadArea.style.opacity = '0.6';
+            
+            // Desabilitar input de arquivo
+            fileInput.disabled = true;
+            
+            // Desabilitar botão de seleção
+            selectBtn.disabled = true;
+            selectBtn.style.opacity = '0.6';
+            selectBtn.style.cursor = 'not-allowed';
+        }
+        
+        function enableUploadInterface() {
+            // Habilitar área de upload
+            uploadArea.style.pointerEvents = 'auto';
+            uploadArea.style.opacity = '1';
+            
+            // Habilitar input de arquivo
+            fileInput.disabled = false;
+            
+            // Habilitar botão de seleção
+            selectBtn.disabled = false;
+            selectBtn.style.opacity = '1';
+            selectBtn.style.cursor = 'pointer';
         }
         
         function showDownloadSection() {
