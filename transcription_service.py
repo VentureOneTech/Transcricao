@@ -247,18 +247,25 @@ class TranscriptionService:
                 # DEBUG: Log dos valores brutos da API
                 logger.info(f"DEBUG RAW: start={start}, end={end}, speaker={utterance.get('speaker', 'A')}")
                 
-                # Converter segundos para formato HH:MM:SS correto
-                start_hours = int(start // 3600)
-                start_minutes = int((start % 3600) // 60)
-                start_seconds = int(start % 60)
+                # Converter milissegundos para segundos primeiro
+                start_seconds = start / 1000
+                end_seconds = end / 1000
                 
-                end_hours = int(end // 3600)
-                end_minutes = int((end % 3600) // 60)
-                end_seconds = int(end % 60)
+                # Converter segundos para formato HH:MM:SS correto
+                start_hours = int(start_seconds // 3600)
+                start_minutes = int((start_seconds % 3600) // 60)
+                start_seconds_int = int(start_seconds % 60)
+                
+                end_hours = int(end_seconds // 3600)
+                end_minutes = int((end_seconds % 3600) // 60)
+                end_seconds_int = int(end_seconds % 60)
                 
                 # Formato HH:MM:SS
-                start_time = f"{start_hours:02d}:{start_minutes:02d}:{start_seconds:02d}"
-                end_time = f"{end_hours:02d}:{end_minutes:02d}:{end_seconds:02d}"
+                start_time = f"{start_hours:02d}:{start_minutes:02d}:{start_seconds_int:02d}"
+                end_time = f"{end_hours:02d}:{end_minutes:02d}:{end_seconds_int:02d}"
+                
+                # DEBUG: Log da conversão
+                logger.info(f"DEBUG CONV: {start}s -> {start_time}, {end}s -> {end_time}")
                 speaker = utterance.get("speaker", "A")
                 text_segment = utterance.get("text", "")
                 
