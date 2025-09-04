@@ -632,11 +632,14 @@
         
         function downloadTranscript() {
             if (currentJobId) {
-                window.location.href = `/download/${currentJobId}`;
+                // Salvar o jobId antes de limpar
+                const jobIdToDownload = currentJobId;
+                
                 // Reset completo da página
-                setTimeout(() => {
-                    resetEverything();
-                }, 1000);
+                resetEverything();
+                
+                // Fazer download após reset
+                window.location.href = `/download/${jobIdToDownload}`;
             }
         }
         
