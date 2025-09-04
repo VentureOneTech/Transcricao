@@ -487,12 +487,16 @@
                 
                 if (data.status === 'completed') {
                     clearInterval(statusCheckInterval);
+                    statusCheckInterval = null;
+                    currentJobId = null;
                     showStatus('Transcrição concluída com sucesso!', 'success');
                     showDownloadSection();
                     resetUploadButton();
                     enableUploadInterface();
                 } else if (data.status === 'error') {
                     clearInterval(statusCheckInterval);
+                    statusCheckInterval = null;
+                    currentJobId = null;
                     showStatus('Erro na transcrição: ' + data.message, 'error');
                     hideProgress();
                     resetUploadButton();
@@ -501,9 +505,12 @@
             })
             .catch(error => {
                 clearInterval(statusCheckInterval);
+                statusCheckInterval = null;
+                currentJobId = null;
                 showStatus('Erro ao verificar status: ' + error.message, 'error');
                 hideProgress();
                 resetUploadButton();
+                enableUploadInterface();
             });
         }
         
