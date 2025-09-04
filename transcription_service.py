@@ -244,8 +244,6 @@ class TranscriptionService:
                 start = utterance.get("start", 0)
                 end = utterance.get("end", 0)
                 
-                # Debug: log dos valores para verificar
-                logger.info(f"DEBUG: start={start}s, end={end}s, speaker={utterance.get('speaker', 'A')}")
                 
                 # Converter segundos para formato HH:MM:SS correto
                 start_hours = int(start // 3600)
