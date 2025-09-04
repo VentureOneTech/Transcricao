@@ -139,6 +139,7 @@ class TranscriptionService:
             
             # Aguardar conclusão
             max_attempts = 60  # Máximo 5 minutos (60 * 5 segundos)
+            last_status = None  # Para controlar logs de mudança de status
             attempts = 0
             
             while attempts < max_attempts:
@@ -154,7 +155,11 @@ class TranscriptionService:
                 polling_response = polling_response.json()
                 status = polling_response["status"]
                 
-                logger.info(f"📊 Status da transcrição: {status} (tentativa {attempts + 1}/{max_attempts})")
+                # Log apenas mudanças de status importantes
+                if attempts == 0 or status != last_status:
+                    logger.info(f"📊 Status da transcrição: {status}")
+                    last_status = status
+                
                 
                 if status == "completed":
                     logger.info("✅ Transcrição concluída!")
