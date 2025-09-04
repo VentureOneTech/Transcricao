@@ -248,23 +248,7 @@
             color: #666;
         }
         
-        .speakers-info {
-            background: #e8f5e8;
-            border-radius: 10px;
-            padding: 15px;
-            margin-bottom: 20px;
-            border-left: 4px solid #4caf50;
-            display: none;
-        }
-        
-        .speakers-info h4 {
-            color: #333;
-            margin-bottom: 5px;
-        }
-        
-        .speakers-info p {
-            color: #666;
-        }
+
     </style>
 </head>
 <body>
@@ -287,12 +271,8 @@
         </div>
         
         <div class="language-info" id="languageInfo" style="display: none;">
-            <h4>🌍 Idioma Detectado</h4>
+            <h4>🌍 Informações da Transcrição</h4>
             <p id="languageText"></p>
-        </div>
-        
-        <div class="speakers-info" id="speakersInfo" style="display: none;">
-            <h4>👥 Interlocutores</h4>
             <p id="speakersText"></p>
         </div>
         
@@ -337,7 +317,6 @@
         const fileName = document.getElementById('fileName');
         const languageInfo = document.getElementById('languageInfo');
         const languageText = document.getElementById('languageText');
-        const speakersInfo = document.getElementById('speakersInfo');
         const speakersText = document.getElementById('speakersText');
         const progressContainer = document.getElementById('progressContainer');
         const progressFill = document.getElementById('progressFill');
@@ -385,6 +364,12 @@
         }
         
         function handleFile(file) {
+            // Verificar se já está processando
+            if (currentJobId && statusCheckInterval) {
+                showStatus('Aguarde o processamento atual terminar antes de enviar um novo arquivo', 'error');
+                return;
+            }
+            
             // Verificar formato
             const allowedExtensions = ['.mp3', '.wav', '.m4a', '.flac', '.aac', '.ogg', '.opus'];
             const fileExtension = '.' + file.name.split('.').pop().toLowerCase();
@@ -493,14 +478,9 @@
                 
                 updateProgress(progress, message);
                 
-                // Mostrar idioma detectado se disponível
+                // Mostrar idioma e interlocutores se disponíveis
                 if (data.language_code) {
-                    showLanguageInfo(data.language_code);
-                }
-                
-                // Mostrar número de interlocutores se disponível
-                if (data.speakers_count) {
-                    showSpeakersInfo(data.speakers_count);
+                    showLanguageInfo(data.language_code, data.speakers_count);
                 }
                 
                 if (data.status === 'completed') {
@@ -540,7 +520,7 @@
             status.style.display = 'block';
         }
         
-        function showLanguageInfo(languageCode) {
+        function showLanguageInfo(languageCode, speakersCount = null) {
             const languageNames = {
                 'es': 'Espanhol',
                 'pt': 'Português',
@@ -552,40 +532,48 @@
             
             const languageName = languageNames[languageCode] || languageCode;
             languageText.textContent = `Idioma detectado: ${languageName} (${languageCode})`;
+            
+            if (speakersCount !== null) {
+                speakersText.textContent = `Interlocutores: ${speakersCount}`;
+            }
+            
             languageInfo.style.display = 'block';
         }
         
-        function showSpeakersInfo(speakersCount) {
-            speakersText.textContent = `Número de interlocutores detectados: ${speakersCount}`;
-            speakersInfo.style.display = 'block';
-        }
+
         
         function disableUploadInterface() {
             // Desabilitar área de upload
             uploadArea.style.pointerEvents = 'none';
             uploadArea.style.opacity = '0.6';
+            uploadArea.style.cursor = 'not-allowed';
             
             // Desabilitar input de arquivo
             fileInput.disabled = true;
+            fileInput.style.pointerEvents = 'none';
             
             // Desabilitar botão de seleção
             selectBtn.disabled = true;
             selectBtn.style.opacity = '0.6';
             selectBtn.style.cursor = 'not-allowed';
+            selectBtn.textContent = 'Processando...';
         }
         
         function enableUploadInterface() {
             // Habilitar área de upload
             uploadArea.style.pointerEvents = 'auto';
             uploadArea.style.opacity = '1';
+            uploadArea.style.cursor = 'pointer';
             
             // Habilitar input de arquivo
             fileInput.disabled = false;
+            fileInput.style.pointerEvents = 'auto';
             
             // Habilitar botão de seleção
             selectBtn.disabled = false;
             selectBtn.style.opacity = '1';
             selectBtn.style.cursor = 'pointer';
+            selectBtn.textContent = 'Selecionar Arquivo';
         }
         
         function showDownloadSection() {
