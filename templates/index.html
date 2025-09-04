@@ -492,7 +492,6 @@
                     showStatus('Transcrição concluída com sucesso!', 'success');
                     showDownloadSection();
                     resetUploadButton();
-                    enableUploadInterface();
                 } else if (data.status === 'error') {
                     clearInterval(statusCheckInterval);
                     statusCheckInterval = null;
@@ -588,6 +587,7 @@
         function showDownloadSection() {
             downloadSection.style.display = 'block';
             hideProgress();
+            // NÃO reabilitar interface aqui - só quando clicar no download
         }
         
         function resetUploadButton() {
@@ -598,6 +598,9 @@
         function downloadTranscript() {
             if (currentJobId) {
                 window.location.href = `/download/${currentJobId}`;
+                // Reabilitar interface após iniciar download
+                enableUploadInterface();
+                currentJobId = null;
             }
         }
         
