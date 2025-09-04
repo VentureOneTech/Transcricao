@@ -174,15 +174,29 @@ class TranscriptionService:
                     progress = base_progress + min(int(elapsed_time * 2), 10)  # 55-65%
                     message = "Aguardando na fila..."
                 elif status == "processing":
-                    progress = base_progress + 10 + min(int(elapsed_time * 3), 25)  # 65-90%
-                    message = "Processando transcrição..."
+                    # Tentar extrair informações de progresso da API
+                    audio_duration = polling_response.get('audio_duration', 0)
+                    if audio_duration > 0:
+                        # Estimar progresso baseado na duração do áudio
+                        estimated_time = audio_duration * 0.1  # Estimativa: 10% da duração
+                        progress_ratio = min(elapsed_time / estimated_time, 0.9)
+                        progress = base_progress + 10 + int(progress_ratio * 25)  # 65-90%
+                        message = f"Processando transcrição... ({int(progress_ratio * 100)}%)"
+                    else:
+                        # Fallback: progresso baseado no tempo
+                        progress = base_progress + 10 + min(int(elapsed_time * 2), 25)  # 65-90%
+                        message = "Processando transcrição..."
                 else:
                     progress = base_progress + 35
                     message = "Finalizando..."
                 
-                # Atualizar progresso
+                # Atualizar progresso com movimento suave
                 if job_status:
-                    job_status['progress'] = min(progress, 90)
+                    current_progress = job_status.get('progress', base_progress)
+                    # Movimento suave: não pular mais de 5% por vez
+                    target_progress = min(progress, 90)
+                    smooth_progress = min(current_progress + 2, target_progress)
+                    job_status['progress'] = smooth_progress
                     job_status['message'] = message
                 
                 # Log apenas mudanças de status importantes
@@ -201,7 +215,7 @@ class TranscriptionService:
                     return None
                 
                 # Aguardar antes de verificar novamente
-                time.sleep(5)
+                time.sleep(3)  # Reduzir para 3 segundos para atualizações mais frequentes
                 attempts += 1
             
             logger.error("❌ Timeout: Transcrição demorou muito para completar")
@@ -248,7 +262,7 @@ class TranscriptionService:
                 end_hours = int(end // 3600)
                 end_minutes = int((end % 3600) // 60)
                 
-                # Formato HH:MM
+                # Formato HH:MM (sempre mostrar horas, mesmo que seja 00)
                 start_time = f"{start_hours:02d}:{start_minutes:02d}"
                 end_time = f"{end_hours:02d}:{end_minutes:02d}"
                 speaker = utterance.get("speaker", "A")
@@ -281,7 +295,7 @@ class TranscriptionService:
                     if job_status:
                         job_status['progress'] = 10 + int(progress * 0.3)  # 10-40%
                         job_status['message'] = f'Convertendo arquivo... {progress}%'
-                        time.sleep(0.1)  # Pequena pausa para atualizar UI
+                        time.sleep(0.2)  # Pausa para atualizar UI
                 
                 converted_file = input_path.with_suffix('.mp3')
                 if not converted_file.exists():
@@ -293,7 +307,7 @@ class TranscriptionService:
             
             # Upload do arquivo
             if job_status:
-                job_status['progress'] = 40
+                job_status['progress'] = 45
                 job_status['message'] = 'Enviando arquivo...'
             
             upload_url = self.upload_file(process_file, job_status)
@@ -303,7 +317,7 @@ class TranscriptionService:
             # Transcrever
             if job_status:
                 job_status['progress'] = 50
-                job_status['message'] = 'Processando transcrição...'
+                job_status['message'] = 'Iniciando transcrição...'
             
             transcript_data = self.transcribe_audio_api(upload_url, job_status)
             if not transcript_data:
