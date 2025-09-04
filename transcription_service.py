@@ -241,16 +241,18 @@ class TranscriptionService:
                 start = utterance.get("start", 0)
                 end = utterance.get("end", 0)
                 
-                # Converter segundos para formato HH:MM correto
+                # Converter segundos para formato HH:MM:SS correto
                 start_hours = int(start // 3600)
                 start_minutes = int((start % 3600) // 60)
+                start_seconds = int(start % 60)
                 
                 end_hours = int(end // 3600)
                 end_minutes = int((end % 3600) // 60)
+                end_seconds = int(end % 60)
                 
-                # Formato HH:MM
-                start_time = f"{start_hours:02d}:{start_minutes:02d}"
-                end_time = f"{end_hours:02d}:{end_minutes:02d}"
+                # Formato HH:MM:SS
+                start_time = f"{start_hours:02d}:{start_minutes:02d}:{start_seconds:02d}"
+                end_time = f"{end_hours:02d}:{end_minutes:02d}:{end_seconds:02d}"
                 speaker = utterance.get("speaker", "A")
                 text_segment = utterance.get("text", "")
                 
