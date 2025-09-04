@@ -385,9 +385,8 @@
             fileName.textContent = `${file.name} (${formatFileSize(file.size)})`;
             fileInfo.style.display = 'block';
             
-            // Desabilitar botão durante upload
-            selectBtn.disabled = true;
-            selectBtn.textContent = 'Enviando...';
+            // Desabilitar interface IMEDIATAMENTE
+            disableUploadInterface();
             
             // Upload do arquivo
             uploadFile(file);
@@ -426,8 +425,7 @@
         }
         
         function startTranscription(jobId) {
-            // Desabilitar interface durante processamento
-            disableUploadInterface();
+            // Interface já foi desabilitada em handleFile()
             
             fetch(`/transcribe/${jobId}`, {
                 method: 'POST'
@@ -488,7 +486,7 @@
                 if (data.status === 'completed') {
                     clearInterval(statusCheckInterval);
                     statusCheckInterval = null;
-                    currentJobId = null;
+                    // NÃO limpar currentJobId aqui - precisa para o download
                     showStatus('Transcrição concluída com sucesso!', 'success');
                     showDownloadSection();
                     resetUploadButton();
