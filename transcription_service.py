@@ -82,7 +82,7 @@ class TranscriptionService:
             logger.error(f"❌ Erro na conversão: {e}")
             return None
     
-    def upload_file(self, file_path, progress_callback=None):
+    def upload_file(self, file_path, job_status=None):
         """Upload do arquivo para AssemblyAI"""
         try:
             logger.info("📤 Enviando arquivo para AssemblyAI...")
@@ -99,6 +99,12 @@ class TranscriptionService:
             if response.status_code == 200:
                 upload_url = response.json()["upload_url"]
                 logger.info("✅ Arquivo enviado com sucesso!")
+                
+                # Atualizar progresso final do upload
+                if job_status:
+                    job_status['progress'] = 50
+                    job_status['message'] = 'Upload concluído! Iniciando transcrição...'
+                
                 return upload_url
             else:
                 logger.error(f"❌ Erro no upload: {response.status_code}")
@@ -108,7 +114,7 @@ class TranscriptionService:
             logger.error(f"❌ Erro no upload: {e}")
             return None
     
-    def transcribe_audio_api(self, upload_url, progress_callback=None):
+    def transcribe_audio_api(self, upload_url, job_status=None):
         """Transcrever áudio usando AssemblyAI"""
         try:
             logger.info("⏳ Iniciando transcrição...")
@@ -124,6 +130,10 @@ class TranscriptionService:
             }
             
             # Enviar requisição de transcrição
+            if job_status:
+                job_status['progress'] = 55
+                job_status['message'] = 'Iniciando transcrição...'
+            
             response = requests.post(
                 self.transcribe_url,
                 json=transcript_request,
@@ -137,10 +147,11 @@ class TranscriptionService:
             transcript_id = response.json()["id"]
             logger.info(f"📋 ID da transcrição: {transcript_id}")
             
-            # Aguardar conclusão
+            # Aguardar conclusão com progresso real
             max_attempts = 60  # Máximo 5 minutos (60 * 5 segundos)
-            last_status = None  # Para controlar logs de mudança de status
+            last_status = None
             attempts = 0
+            start_time = time.time()
             
             while attempts < max_attempts:
                 polling_response = requests.get(
@@ -155,22 +166,39 @@ class TranscriptionService:
                 polling_response = polling_response.json()
                 status = polling_response["status"]
                 
+                # Calcular progresso baseado no tempo e status
+                elapsed_time = time.time() - start_time
+                base_progress = 55  # Começa em 55%
+                
+                if status == "queued":
+                    progress = base_progress + min(int(elapsed_time * 2), 10)  # 55-65%
+                    message = "Aguardando na fila..."
+                elif status == "processing":
+                    progress = base_progress + 10 + min(int(elapsed_time * 3), 25)  # 65-90%
+                    message = "Processando transcrição..."
+                else:
+                    progress = base_progress + 35
+                    message = "Finalizando..."
+                
+                # Atualizar progresso
+                if job_status:
+                    job_status['progress'] = min(progress, 90)
+                    job_status['message'] = message
+                
                 # Log apenas mudanças de status importantes
                 if attempts == 0 or status != last_status:
                     logger.info(f"📊 Status da transcrição: {status}")
                     last_status = status
                 
-                
                 if status == "completed":
                     logger.info("✅ Transcrição concluída!")
+                    if job_status:
+                        job_status['progress'] = 95
+                        job_status['message'] = 'Transcrição concluída!'
                     return polling_response
                 elif status == "error":
                     logger.error(f"❌ Erro na transcrição: {polling_response.get('error')}")
                     return None
-                elif status == "queued":
-                    logger.info("⏳ Transcrição na fila...")
-                elif status == "processing":
-                    logger.info("🔄 Processando transcrição...")
                 
                 # Aguardar antes de verificar novamente
                 time.sleep(5)
@@ -213,16 +241,16 @@ class TranscriptionService:
                 start = utterance.get("start", 0)
                 end = utterance.get("end", 0)
                 
-                # Converter segundos para formato MM:SS correto
-                start_minutes = int(start // 60)
-                start_seconds = int(start % 60)
+                # Converter segundos para formato HH:MM correto
+                start_hours = int(start // 3600)
+                start_minutes = int((start % 3600) // 60)
                 
-                end_minutes = int(end // 60)
-                end_seconds = int(end % 60)
+                end_hours = int(end // 3600)
+                end_minutes = int((end % 3600) // 60)
                 
-                # Formato MM:SS
-                start_time = f"{start_minutes:02d}:{start_seconds:02d}"
-                end_time = f"{end_minutes:02d}:{end_seconds:02d}"
+                # Formato HH:MM
+                start_time = f"{start_hours:02d}:{start_minutes:02d}"
+                end_time = f"{end_hours:02d}:{end_minutes:02d}"
                 speaker = utterance.get("speaker", "A")
                 text_segment = utterance.get("text", "")
                 
@@ -253,6 +281,7 @@ class TranscriptionService:
                     if job_status:
                         job_status['progress'] = 10 + int(progress * 0.3)  # 10-40%
                         job_status['message'] = f'Convertendo arquivo... {progress}%'
+                        time.sleep(0.1)  # Pequena pausa para atualizar UI
                 
                 converted_file = input_path.with_suffix('.mp3')
                 if not converted_file.exists():
@@ -267,7 +296,7 @@ class TranscriptionService:
                 job_status['progress'] = 40
                 job_status['message'] = 'Enviando arquivo...'
             
-            upload_url = self.upload_file(process_file)
+            upload_url = self.upload_file(process_file, job_status)
             if not upload_url:
                 return {'success': False, 'error': 'Falha no upload'}
             
@@ -276,13 +305,13 @@ class TranscriptionService:
                 job_status['progress'] = 50
                 job_status['message'] = 'Processando transcrição...'
             
-            transcript_data = self.transcribe_audio_api(upload_url)
+            transcript_data = self.transcribe_audio_api(upload_url, job_status)
             if not transcript_data:
                 return {'success': False, 'error': 'Falha na transcrição'}
             
             # Salvar resultado
             if job_status:
-                job_status['progress'] = 90
+                job_status['progress'] = 95
                 job_status['message'] = 'Salvando resultado...'
             
             result_file = self.save_transcript(transcript_data, input_path.name)
@@ -299,6 +328,11 @@ class TranscriptionService:
             # Calcular número de interlocutores
             utterances = transcript_data.get('utterances', [])
             speakers_count = len(set(u.get('speaker', 'A') for u in utterances)) if utterances else 0
+            
+            # Progresso final
+            if job_status:
+                job_status['progress'] = 100
+                job_status['message'] = 'Transcrição concluída com sucesso!'
             
             return {
                 'success': True,
